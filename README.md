@@ -1,6 +1,5 @@
 # Chain2048
 
-[![CI](https://github.com/Yunshiro/2048-onchain/actions/workflows/test.yml/badge.svg)](https://github.com/Yunshiro/2048-onchain/actions/workflows/test.yml)
 [![Solidity](https://img.shields.io/badge/Solidity-0.8.24-363636?logo=solidity)](https://soliditylang.org/)
 [![Monad Testnet](https://img.shields.io/badge/Monad-Testnet-836EF9)](https://testnet.monadexplorer.com/)
 
@@ -224,8 +223,7 @@ cast call <CONTRACT> "MAX_REFUND_PER_MOVE()(uint256)" --rpc-url https://testnet-
 │   ├── src/hooks/useGame.ts     # 链上状态、乐观更新和交易队列
 │   ├── src/lib/                 # 游戏引擎、会话与测试
 │   └── public/_headers          # CSP 和安全响应头
-├── docs/                        # MVP 实施与安全说明
-└── .github/workflows/test.yml   # 合约与前端 CI
+└── docs/                        # MVP 文档与 GitHub Actions CI 模板
 ```
 
 ## 安全说明
@@ -235,7 +233,7 @@ cast call <CONTRACT> "MAX_REFUND_PER_MOVE()(uint256)" --rpc-url https://testnet-
 - 前端会验证 V2.3 安全参数，并区分合约不兼容与 RPC 网络故障。
 - 自定义 RPC 时需要同步修改 `web/public/_headers` 中 CSP 的 `connect-src`。
 - 静态托管平台必须实际返回 `_headers` 中的安全头；仅将文件打包进产物并不会自动生效。
-- CI 包含格式检查、合约构建、合约测试、前端测试、依赖审计和生产构建。
+- `docs/ci-workflow.yml` 提供完整 GitHub Actions 模板；将它复制到 `.github/workflows/test.yml` 后即可启用自动检查。
 - 本项目不代表已经完成独立审计。任何涉及真实价值的公开部署都应先进行第三方审计并建立漏洞响应流程。
 
 ## 历史部署
