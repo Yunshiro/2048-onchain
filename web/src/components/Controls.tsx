@@ -13,16 +13,16 @@ export function Controls({ disabled, onMove }: { disabled: boolean; onMove: (dir
       </div>
       <div className="dpad">
         <button className="dpad-up" type="button" disabled={disabled} onClick={() => onMove(Direction.Up)} aria-label="向上">
-          <ArrowUp size={22} />
+          <ArrowUp size={21} />
         </button>
-        <button type="button" disabled={disabled} onClick={() => onMove(Direction.Left)} aria-label="向左">
-          <ArrowLeft size={22} />
+        <button className="dpad-left" type="button" disabled={disabled} onClick={() => onMove(Direction.Left)} aria-label="向左">
+          <ArrowLeft size={21} />
         </button>
-        <button type="button" disabled={disabled} onClick={() => onMove(Direction.Down)} aria-label="向下">
-          <ArrowDown size={22} />
+        <button className="dpad-right" type="button" disabled={disabled} onClick={() => onMove(Direction.Right)} aria-label="向右">
+          <ArrowRight size={21} />
         </button>
-        <button type="button" disabled={disabled} onClick={() => onMove(Direction.Right)} aria-label="向右">
-          <ArrowRight size={22} />
+        <button className="dpad-down" type="button" disabled={disabled} onClick={() => onMove(Direction.Down)} aria-label="向下">
+          <ArrowDown size={21} />
         </button>
       </div>
     </section>

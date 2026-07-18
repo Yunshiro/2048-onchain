@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { motion, useMotionTemplate, useMotionValue, useReducedMotion, useSpring } from "motion/react";
 import { ArrowRight, ArrowSquareOut, Check, Copy, Drop, Lightning, ShieldCheck, Warning } from "@phosphor-icons/react";
 import { Board } from "./components/Board";
 import { ConnectBar } from "./components/ConnectBar";
@@ -7,18 +8,46 @@ import { GameOverOverlay } from "./components/GameOverOverlay";
 import { ScorePanel } from "./components/ScorePanel";
 import { contractAddress, monadTestnet } from "./config/chain";
 import { useGame } from "./hooks/useGame";
-import { packBoard } from "./lib/engine";
+import { packBoard, applyPredictedMove, Direction } from "./lib/engine";
 import { shortAddress } from "./lib/session";
 import { MAX_PENDING_TRANSACTIONS } from "./lib/txQueue";
 
 const demoBoard = packBoard([1, 2, 3, 4, 0, 5, 6, 0, 0, 0, 7, 0, 0, 0, 0, 8]);
 
+const riseIn = {
+  hidden: { opacity: 0, y: 26, filter: "blur(6px)" },
+  show: (order: number) => ({
+    opacity: 1,
+    y: 0,
+    filter: "blur(0px)",
+    transition: { delay: 0.06 + order * 0.1, duration: 0.72, ease: [0.16, 1, 0.3, 1] as const },
+  }),
+};
+
 export default function App() {
   const game = useGame();
   const [copied, setCopied] = useState(false);
+  const reducedMotion = useReducedMotion() ?? false;
   const activeBoard = game.board === 0n ? demoBoard : game.board;
   const hasGame = game.gameId !== 0n || game.over;
   const controlsDisabled = !hasGame || game.over || game.contractPaused || game.pending >= MAX_PENDING_TRANSACTIONS || !game.authorized;
+
+  // 指针环境光：低刚度弹簧让光晕拖着走，像真实光源的惯性。
+  const glowX = useMotionValue(62);
+  const glowY = useMotionValue(38);
+  const smoothX = useSpring(glowX, { stiffness: 42, damping: 18, mass: 0.9 });
+  const smoothY = useSpring(glowY, { stiffness: 42, damping: 18, mass: 0.9 });
+  const glow = useMotionTemplate`radial-gradient(34rem 34rem at ${smoothX}% ${smoothY}%, rgba(255, 128, 44, 0.07), transparent 68%)`;
+
+  useEffect(() => {
+    if (reducedMotion) return;
+    const handlePointer = (event: PointerEvent) => {
+      glowX.set((event.clientX / window.innerWidth) * 100);
+      glowY.set((event.clientY / window.innerHeight) * 100);
+    };
+    window.addEventListener("pointermove", handlePointer);
+    return () => window.removeEventListener("pointermove", handlePointer);
+  }, [glowX, glowY, reducedMotion]);
 
   const copySessionAddress = async () => {
     if (!game.sessionAddress) return;
@@ -27,21 +56,25 @@ export default function App() {
     window.setTimeout(() => setCopied(false), 1600);
   };
 
+  const entrance = reducedMotion ? undefined : riseIn;
+
   return (
     <div className="app-shell">
-      <header className="site-header">
+      {!reducedMotion && <motion.div className="ambient-glow" style={{ background: glow }} />}
+
+      <motion.header className="site-header" variants={entrance} initial="hidden" animate="show" custom={0}>
         <a className="brand" href="/" aria-label="Chain2048 首页">
           <span className="brand-mark">2048</span>
           <span>ONCHAIN</span>
         </a>
-        <div className="network-label"><span /> MONAD TESTNET // LIVE</div>
+        <div className="network-label"><span /> MONAD TESTNET</div>
         <ConnectBar address={game.address} chainId={game.chainId} isConnected={game.isConnected} />
-      </header>
+      </motion.header>
 
       <main className="game-layout">
-        <aside className="left-rail">
+        <motion.aside className="left-rail" variants={entrance} initial="hidden" animate="show" custom={1}>
           <div className="intro-copy">
-            <p className="eyebrow">MONAD // ONCHAIN 2048</p>
+            <p className="eyebrow">Monad · Onchain 2048</p>
             <h1>合并数字。<br /><span>写入链上。</span></h1>
             <p>滑动即时响应，移动由会话钱包静默广播。每一次合并，都在 Monad 留下可验证记录。</p>
           </div>
@@ -52,15 +85,14 @@ export default function App() {
             <span><small>游戏合约</small>{shortAddress(contractAddress)}</span>
             <ArrowSquareOut size={18} />
           </a>
-        </aside>
+        </motion.aside>
 
-        <section className="board-stage">
+        <motion.section className="board-stage" variants={entrance} initial="hidden" animate="show" custom={2}>
           <div className="board-meta">
-            <span>{hasGame ? `GAME ID // ${game.gameId || "ENDED"}` : "SYSTEM // STANDBY"}</span>
-            <span>{game.pending > 0 ? `SYNCING // ${game.pending} MOVES` : "CHAIN // SYNCED"}</span>
+            <span>{hasGame ? `GAME #${game.gameId || "ENDED"}` : "STANDBY"}</span>
+            <span>{game.pending > 0 ? `SYNCING ${game.pending}` : "SYNCED"}</span>
           </div>
-          <div className="board-wrap">
-            <Board board={activeBoard} disabled={controlsDisabled} shakeKey={game.shakeKey} onMove={game.move} />
+          <Board board={activeBoard} disabled={controlsDisabled} shakeKey={game.shakeKey} onMove={game.move}>
             {!hasGame && (
               <div className="board-gate">
                 {!game.isConnected && <><h2>连接主钱包</h2><p>授权限时会话后即可开始，每步移动不再弹窗。</p></>}
@@ -70,11 +102,11 @@ export default function App() {
                 {game.isConnected && game.status !== "error" && !game.contractPaused && game.authorized && <><h2>{game.hasGasBalance ? "2048 已经准备好" : "需要补充 MON"}</h2><p>{game.hasGasBalance ? "新游戏由登录钱包确认，后续移动保持静默。" : "补充会话燃料后即可连续移动。"}</p><button className="button button-primary" type="button" disabled={game.status === "starting" || game.funding} onClick={game.hasGasBalance ? game.startGame : game.fundGameGas}><Drop size={18} />{game.funding ? "正在补充" : game.status === "starting" ? "正在创建" : game.hasGasBalance ? "开始 2048" : `补充 ${game.topUpAmount || "0"} MON`}</button></>}
               </div>
             )}
-          </div>
+          </Board>
           {game.over && <GameOverOverlay score={game.score} highScore={game.highScore} onRestart={game.startGame} />}
-        </section>
+        </motion.section>
 
-        <aside className="right-rail">
+        <motion.aside className="right-rail" variants={entrance} initial="hidden" animate="show" custom={3}>
           <Controls disabled={controlsDisabled} onMove={game.move} />
 
           <section className="session-panel">
@@ -138,7 +170,7 @@ export default function App() {
               <li><span>链上</span><p>确定性方块生成，本地与事件精确对账。</p></li>
             </ol>
           </section>
-        </aside>
+        </motion.aside>
       </main>
 
       {(game.error || game.notice) && (

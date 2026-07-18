@@ -1,21 +1,13 @@
-import { motion, useReducedMotion } from "motion/react";
 import { Lightning, Trophy } from "@phosphor-icons/react";
 import { maxTile } from "../lib/engine";
+import { CountUp } from "./CountUp";
 
 export function ScorePanel({ board, score, highScore, pending }: { board: bigint; score: bigint; highScore: bigint; pending: number }) {
-  const reducedMotion = useReducedMotion();
   return (
     <section className="score-panel" aria-label="游戏分数">
       <div className="score-primary">
-        <span>CURRENT SCORE</span>
-        <motion.strong
-          key={score.toString()}
-          initial={reducedMotion ? false : { opacity: 0.45, y: 7, scale: 1.08 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ type: "spring", stiffness: 420, damping: 23 }}
-        >
-          {score.toLocaleString()}
-        </motion.strong>
+        <span>Score</span>
+        <CountUp value={score} />
       </div>
       <div className="score-secondary">
         <div>
@@ -29,7 +21,7 @@ export function ScorePanel({ board, score, highScore, pending }: { board: bigint
           <strong>{maxTile(board) || "-"}</strong>
         </div>
       </div>
-      {pending > 0 && <div className="pending-strip"><span />LOCAL OK // {pending} MOVES SYNCING</div>}
+      {pending > 0 && <div className="pending-strip"><span />本地预览 · {pending} 步待链上确认</div>}
     </section>
   );
 }

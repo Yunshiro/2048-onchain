@@ -52,7 +52,7 @@ export function slideRowLeft(input: readonly number[]): { row: number[]; gained:
   return { row, gained };
 }
 
-function cellIndex(direction: Direction, line: number, offset: number): number {
+export function cellIndex(direction: Direction, line: number, offset: number): number {
   if (direction === Direction.Left) return line * 4 + offset;
   if (direction === Direction.Right) return line * 4 + (3 - offset);
   if (direction === Direction.Up) return offset * 4 + line;
